@@ -1,7 +1,7 @@
 package fr.bamlab.rnimageresizer;
 
-import android.content.Context;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -14,8 +14,8 @@ import android.util.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Date;
 
 /**
@@ -41,7 +41,7 @@ public class ImageResizer {
             float width = image.getWidth();
             float height = image.getHeight();
 
-            float ratio = Math.min((float)maxWidth / width, (float)maxHeight / height);
+            float ratio = Math.min((float) maxWidth / width, (float) maxHeight / height);
 
             int finalWidth = (int) (width * ratio);
             int finalHeight = (int) (height * ratio);
@@ -55,11 +55,19 @@ public class ImageResizer {
         return newImage;
     }
 
+    public static Bitmap getIMGSizeFromUri(Uri uri) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+
+        return BitmapFactory.decodeFile(new File(uri.getPath()).getAbsolutePath(), options);
+
+    }
+
+
     /**
      * Rotate the specified bitmap with the given angle, in degrees.
      */
-    public static Bitmap rotateImage(Bitmap source, float angle)
-    {
+    public static Bitmap rotateImage(Bitmap source, float angle) {
         Bitmap retVal;
 
         Matrix matrix = new Matrix();
@@ -76,14 +84,14 @@ public class ImageResizer {
      * Save the given bitmap in a directory. Extension is automatically generated using the bitmap format.
      */
     private static File saveImage(Bitmap bitmap, File saveDirectory, String fileName,
-                                    Bitmap.CompressFormat compressFormat, int quality)
+                                  Bitmap.CompressFormat compressFormat, int quality)
             throws IOException {
         if (bitmap == null) {
             throw new IOException("The bitmap couldn't be resized");
         }
 
         File newFile = new File(saveDirectory, fileName + "." + compressFormat.name());
-        if(!newFile.createNewFile()) {
+        if (!newFile.createNewFile()) {
             throw new IOException("The file already exists");
         }
 
@@ -144,7 +152,8 @@ public class ImageResizer {
                 ExifInterface ei = new ExifInterface(file.getAbsolutePath());
                 return getOrientation(ei);
             }
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        }
 
         return 0;
     }
@@ -193,7 +202,7 @@ public class ImageResizer {
     /**
      * Load a bitmap either from a real file or using the {@link ContentResolver} of the current
      * {@link Context} (to read gallery images for example).
-     *
+     * <p>
      * Note that, when options.inJustDecodeBounds = true, we actually expect sourceImage to remain
      * as null (see https://developer.android.com/training/displaying-bitmaps/load-bitmap.html), so
      * getting null sourceImage at the completion of this method is not always worthy of an error.
@@ -223,7 +232,7 @@ public class ImageResizer {
      * Loads the bitmap resource from the file specified in imagePath.
      */
     private static Bitmap loadBitmapFromFile(Context context, Uri imageUri, int newWidth,
-                                             int newHeight) throws IOException  {
+                                             int newHeight) throws IOException {
         // Decode the image bounds to find the size of the source image.
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -248,7 +257,7 @@ public class ImageResizer {
         String imagePath = imageUri.getSchemeSpecificPart();
         int commaLocation = imagePath.indexOf(',');
         if (commaLocation != -1) {
-            final String mimeType = imagePath.substring(0, commaLocation).replace('\\','/').toLowerCase();
+            final String mimeType = imagePath.substring(0, commaLocation).replace('\\', '/').toLowerCase();
             final boolean isJpeg = mimeType.startsWith(IMAGE_JPEG);
             final boolean isPng = !isJpeg && mimeType.startsWith(IMAGE_PNG);
 
@@ -267,8 +276,8 @@ public class ImageResizer {
      * Create a resized version of the given image.
      */
     public static File createResizedImage(Context context, Uri imageUri, int newWidth,
-                                            int newHeight, Bitmap.CompressFormat compressFormat,
-                                            int quality, int rotation, String outputPath) throws IOException  {
+                                          int newHeight, Bitmap.CompressFormat compressFormat,
+                                          int quality, int rotation, String outputPath) throws IOException {
         Bitmap sourceImage = null;
         String imageUriScheme = imageUri.getScheme();
         if (imageUriScheme == null || imageUriScheme.equalsIgnoreCase(SCHEME_FILE) || imageUriScheme.equalsIgnoreCase(SCHEME_CONTENT)) {
