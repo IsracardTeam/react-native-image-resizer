@@ -39,29 +39,31 @@ class ImageResizerModule extends ReactContextBaseJavaModule {
                                          int quality, int rotation, String outputPath, final Callback successCb, final Callback failureCb) {
 
         Uri imageUri = Uri.parse(imagePath);
-        Bitmap bitmap = ImageResizer.getIMGSizeFromUri(imageUri);
+        File file = ImageResizer.getFileFromUri(this.context, imageUri);
         Bitmap.CompressFormat compressFormat = Bitmap.CompressFormat.valueOf(compressFormatString);
-        int numOfBytes = bitmap.getByteCount();
+        long numOfBytes = file.length();
 
         WritableMap response = Arguments.createMap();
 
         //if the existing image is smaller than the target size, just return the image
         if (numOfBytes < targetSizeInBytes) {
-            response.putBoolean("isResized", false);
-            response.putDouble("size", numOfBytes);
+            response.putString("path", file.getAbsolutePath());
+            response.putString("uri", Uri.fromFile(file).toString());
+            response.putString("name", file.getName());
+            response.putDouble("size", file.length());
             // Invoke success
             successCb.invoke(response);
         } else {
-            //if the file is bigger than the target size
 
-            //calculate the ratio
-            int ratio = bitmap.getWidth() / newWidth;
-            //calculate the new Height
-            int newHeight = bitmap.getHeight() / ratio;
 
             try {
-                File resizedImage = ImageResizer.createResizedImage(this.context, imageUri, newWidth,
-                        newHeight, compressFormat, quality, rotation, outputPath);
+                File resizedImage = ImageResizer.createResizedImageWithTargetSize(this.context, imageUri, compressFormat, 100, targetSizeInBytes);
+                if (resizedImage.isFile()) {
+                    response.putString("path", resizedImage.getAbsolutePath());
+                    response.putString("uri", Uri.fromFile(resizedImage).toString());
+                    response.putString("name", resizedImage.getName());
+                    response.putDouble("size", resizedImage.length());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
