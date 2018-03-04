@@ -10,6 +10,7 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.util.Base64;
+import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -55,11 +56,71 @@ public class ImageResizer {
         return newImage;
     }
 
-    public static Bitmap getIMGSizeFromUri(Uri uri) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
+    public static File createResizedImageWithTargetSize(Context context, Uri imageUri, Bitmap.CompressFormat compressFormat, int quality, int targetSizeInBytes) throws IOException {
 
-        return BitmapFactory.decodeFile(new File(uri.getPath()).getAbsolutePath(), options);
+        InputStream in = null;
+        ContentResolver mContentResolver = context.getContentResolver();
+        try {
+            final int IMAGE_MAX_SIZE = targetSizeInBytes; // 1.2MP
+            in = mContentResolver.openInputStream(imageUri);
+
+            // Decode image size
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(in, null, options);
+            in.close();
+
+
+            int scale = 1;
+            while ((options.outWidth * options.outHeight) * (1 / Math.pow(scale, 2)) >
+                    IMAGE_MAX_SIZE) {
+                scale++;
+            }
+
+            Bitmap resultBitmap = null;
+            in = mContentResolver.openInputStream(imageUri);
+            if (scale > 1) {
+                scale--;
+                // scale to max possible inSampleSize that still yields an image
+                // larger than target
+                options = new BitmapFactory.Options();
+                options.inSampleSize = scale;
+                resultBitmap = BitmapFactory.decodeStream(in, null, options);
+
+                // resize to desired dimensions
+                int height = resultBitmap.getHeight();
+                int width = resultBitmap.getWidth();
+
+
+                double y = Math.sqrt(IMAGE_MAX_SIZE
+                        / (((double) width) / height));
+                double x = (y / height) * width;
+
+                Bitmap scaledBitmap = Bitmap.createScaledBitmap(resultBitmap, (int) x,
+                        (int) y, true);
+                resultBitmap.recycle();
+                resultBitmap = scaledBitmap;
+
+                System.gc();
+            } else {
+                resultBitmap = BitmapFactory.decodeStream(in);
+            }
+            in.close();
+
+            File path = context.getCacheDir();
+//            if (imageUri.getPath()!= null) {
+//                path = new File(imageUri.getPath());
+//            }
+
+            File newFile = ImageResizer.saveImage(resultBitmap, path,
+                    Long.toString(new Date().getTime()), compressFormat, quality);
+
+            return newFile;
+        } catch (IOException e) {
+            Log.e("ImageResizer", e.getMessage(), e);
+            return null;
+        }
+
 
     }
 
@@ -161,7 +222,7 @@ public class ImageResizer {
     /**
      * Convert metadata to degrees
      */
-    public static int getOrientation(ExifInterface exif) {
+    private static int getOrientation(ExifInterface exif) {
         int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
         switch (orientation) {
             case ExifInterface.ORIENTATION_ROTATE_90:
@@ -233,7 +294,8 @@ public class ImageResizer {
      */
     private static Bitmap loadBitmapFromFile(Context context, Uri imageUri, int newWidth,
                                              int newHeight) throws IOException {
-        // Decode the image bounds to find the size of the source image.
+        // Decode the
+        // image bounds to find the size of the source image.
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         loadBitmap(context, imageUri, options);
