@@ -96,11 +96,58 @@ RCT_EXPORT_METHOD(resizeImageToCertainSize: (NSString *) path
                   format:(NSString *)format
                   quality:(float)quality
                   rotation:(float)rotation
-                  outputPath:(NSString *)outputPath)
+                  outputPath:(NSString *)outputPath
+                  callback:(RCTResponseSenderBlock)callback)
 {
+    //Set image extension
+    NSString *extension = @"jpg";
+    if ([format isEqualToString:@"PNG"]) {
+        extension = @"png";
+    }
     
+    NSString* fullPath;
+    @try {
+        fullPath = generateFilePath(extension, outputPath);
+    } @catch (NSException *exception) {
+        callback(@[@"Invalid output path.", @""]);
+        return;
+    }
     
-    
+    [_bridge.imageLoader loadImageWithURLRequest:[RCTConvert NSURLRequest:path] callback:^(NSError *error, UIImage *image) {
+        
+        if (error || image == nil) {
+            if ([path hasPrefix:@"data:"] || [path hasPrefix:@"file:"]) {
+                NSURL *imageUrl = [[NSURL alloc] initWithString:path];
+                image = [UIImage imageWithData:[NSData dataWithContentsOfURL:imageUrl]];
+            } else {
+                image = [[UIImage alloc] initWithContentsOfFile:path];
+            }
+            if (image == nil) {
+                callback(@[@"Can't retrieve the file from the path.", @""]);
+                return;
+            }
+        }
+        
+        UIImage * compressedImage = compressImage(image);
+        
+        if (compressedImage == nil) {
+            callback(@[@"Can't resize the image.", @""]);
+            return;
+        }
+        
+        NSURL *fileUrl = [[NSURL alloc] initFileURLWithPath:fullPath];
+        NSString *fileName = fileUrl.lastPathComponent;
+        NSError *attributesError = nil;
+        NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:fullPath error:&attributesError];
+        NSNumber *fileSize = fileAttributes == nil ? 0 : [fileAttributes objectForKey:NSFileSize];
+        NSDictionary *response = @{@"path": fullPath,
+                                   @"uri": fileUrl.absoluteString,
+                                   @"name": fileName,
+                                   @"size": fileSize == nil ? @(0) : fileSize
+                                   };
+        
+        callback(@[[NSNull null], response]);
+    }];
 }
 
 RCT_EXPORT_METHOD(createResizedImage:(NSString *)path
