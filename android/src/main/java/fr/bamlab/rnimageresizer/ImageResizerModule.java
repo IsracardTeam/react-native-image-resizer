@@ -65,11 +65,9 @@ class ImageResizerModule extends ReactContextBaseJavaModule {
                     response.putDouble("size", resizedImage.length());
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+               failureCb.invoke(e.getMessage());
             }
-
         }
-
     }
 
     @ReactMethod
