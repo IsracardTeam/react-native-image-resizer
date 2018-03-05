@@ -175,7 +175,7 @@ public class ImageResizer {
      * Get {@link File} object for the given Android URI.<br>
      * Use content resolver to get real path if direct path doesn't return valid file.
      */
-    private static File getFileFromUri(Context context, Uri uri) {
+    public static File getFileFromUri(Context context, Uri uri) {
 
         // first try by direct path
         File file = new File(uri.getPath());
