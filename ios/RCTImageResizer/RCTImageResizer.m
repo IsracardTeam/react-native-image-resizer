@@ -91,6 +91,18 @@ UIImage * rotateImage(UIImage *inputImage, float rotationDegrees)
     }
 }
 
+RCT_EXPORT_METHOD(resizeImageToCertainSize: (NSString *) path
+                  targetSizeInBytes:(int) targetSizeInBytes
+                  format:(NSString *)format
+                  quality:(float)quality
+                  rotation:(float)rotation
+                  outputPath:(NSString *)outputPath)
+{
+    
+    
+    
+}
+
 RCT_EXPORT_METHOD(createResizedImage:(NSString *)path
                   width:(float)width
                   height:(float)height
