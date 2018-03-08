@@ -92,14 +92,14 @@ UIImage * rotateImage(UIImage *inputImage, float rotationDegrees)
 }
 
 
-UIImage * compressImage(UIImage *image){
+UIImage * compressImage(UIImage *image, int targetSizeInBytes){
     float actualHeight = image.size.height;
     float actualWidth = image.size.width;
-    float maxHeight = 600.0;
-    float maxWidth = 800.0;
+    float maxHeight = 1200.0;
+    float maxWidth = 1600.0;
     float imgRatio = actualWidth/actualHeight;
     float maxRatio = maxWidth/maxHeight;
-    float compressionQuality = 0.5;//50 percent compression
+    float compressionQuality = 0.8;//50 percent compression
     if (actualHeight > maxHeight || actualWidth > maxWidth){
         if(imgRatio < maxRatio){
             //adjust width according to maxHeight
@@ -124,6 +124,10 @@ UIImage * compressImage(UIImage *image){
     UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
     NSData *imageData = UIImageJPEGRepresentation(img, compressionQuality);
     UIGraphicsEndImageContext();
+    //return original image if smaller than target size
+    if([imageData length] < targetSizeInBytes)
+        return image;
+
     return [UIImage imageWithData:imageData];
 }
 
@@ -164,7 +168,7 @@ RCT_EXPORT_METHOD(resizeImageToCertainSize: (NSString *) path
             }
         }
         
-        UIImage * compressedImage = compressImage(image);
+        UIImage * compressedImage = compressImage(image, targetSizeInBytes);
         
         if (compressedImage == nil) {
             callback(@[@"Can't resize the image.", @""]);
